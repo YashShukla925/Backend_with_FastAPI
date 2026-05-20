@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_current_user, require_roles
 from app.database import get_db
+from app.models import User
+from app.schemas.auth import UserRole
 from app.schemas.course import CourseCreate, CourseResponse, CourseUpdate
 from app.services import course_service
 from app.services.course_service import DuplicateCourseNameError
@@ -13,6 +16,7 @@ router = APIRouter()
 def register_course(
     course: CourseCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ) -> CourseResponse:
     try:
         return course_service.create_course(db, course)
@@ -24,7 +28,10 @@ def register_course(
 
 
 @router.get("/", response_model=list[CourseResponse])
-def list_courses(db: Session = Depends(get_db)) -> list[CourseResponse]:
+def list_courses(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[CourseResponse]:
     return course_service.get_all_courses(db)
 
 
@@ -32,6 +39,7 @@ def list_courses(db: Session = Depends(get_db)) -> list[CourseResponse]:
 def get_course(
     course_id: str,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> CourseResponse:
     course = course_service.get_course_by_id(db, course_id)
     if course is None:
@@ -48,6 +56,7 @@ def update_course(
     course_id: str,
     course_update: CourseUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ) -> CourseResponse:
     try:
         course = course_service.update_course(db, course_id, course_update)
@@ -70,6 +79,7 @@ def update_course(
 def delete_course(
     course_id: str,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ) -> Response:
     deleted = course_service.delete_course(db, course_id)
     if not deleted:

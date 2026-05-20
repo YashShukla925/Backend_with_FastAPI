@@ -25,6 +25,16 @@ class Student(Base):
     )
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True, default=generate_uuid, index=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    full_name = Column(String(100), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    role = Column(String(30), nullable=False, default="student", index=True)
+
+
 class Course(Base):
     __tablename__ = "courses"
 

@@ -19,10 +19,12 @@ app/
         courses.py
         enrollments.py
   schemas/
+    auth.py
     student.py
     course.py
     enrollment.py
   services/
+    auth_service.py
     student_service.py
     course_service.py
     enrollment_service.py
@@ -58,6 +60,13 @@ enrollments
 - id
 - student_id
 - course_id
+
+users
+- id
+- email
+- full_name
+- hashed_password
+- role
 ```
 
 ### Constraints
@@ -68,6 +77,24 @@ enrollments
 - If a duplicate student email is used, the API returns `409 Conflict`.
 - If a duplicate course name is used, the API returns `409 Conflict`.
 - If a requested student or course does not exist, the API returns `404 Not Found`.
+
+## Authentication and Authorization
+
+The API uses bearer tokens for authentication. Register a user, log in, and send the
+returned token in the `Authorization` header:
+
+```text
+Authorization: Bearer <access_token>
+```
+
+Roles:
+
+- `admin` can create, update, and delete students and courses, and can create enrollments.
+- `student` can access authenticated read routes.
+
+Passwords are stored as PBKDF2 hashes. Tokens are signed with HS256 in the service
+layer; change `SECRET_KEY` in `app/services/auth_service.py` before using this beyond
+local development.
 
 ## Run
 
@@ -84,6 +111,9 @@ http://127.0.0.1:8000/docs
 
 ## Endpoints
 
+- `POST /api/v1/auth/register` registers a user.
+- `POST /api/v1/auth/login` logs a user in and returns a bearer token.
+- `GET /api/v1/auth/me` gets the authenticated user's profile.
 - `POST /api/v1/students/` registers a student.
 - `GET /api/v1/students/` lists students.
 - `GET /api/v1/students/{student_id}` gets one student.
