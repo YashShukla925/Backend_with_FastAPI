@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from math import ceil
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models import User
 from app.schemas.auth import UserRole
-from app.schemas.student import StudentCreate, StudentResponse, StudentUpdate
+from app.schemas.student import (
+    PaginatedStudentResponse,
+    StudentCreate,
+    StudentResponse,
+    StudentUpdate,
+)
 from app.services import student_service
 from app.services.student_service import DuplicateStudentEmailError
 
@@ -27,12 +34,29 @@ def register_student(
         ) from None
 
 
-@router.get("/", response_model=list[StudentResponse])
+@router.get("/", response_model=PaginatedStudentResponse)
 def list_students(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> list[StudentResponse]:
-    return student_service.get_all_students(db)
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+) -> PaginatedStudentResponse:
+    students, total_items = student_service.get_paginated_students(
+        db,
+        page,
+        page_size,
+    )
+    total_pages = ceil(total_items / page_size) if total_items else 0
+
+    return PaginatedStudentResponse(
+        items=students,
+        meta={
+            "page": page,
+            "page_size": page_size,
+            "total_items": total_items,
+            "total_pages": total_pages,
+        },
+    )
 
 
 @router.get("/{student_id}", response_model=StudentResponse)

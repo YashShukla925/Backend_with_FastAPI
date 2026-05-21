@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Course
@@ -23,6 +23,25 @@ def create_course(db: Session, course: CourseCreate) -> Course:
 
 def get_all_courses(db: Session) -> list[Course]:
     return list(db.scalars(select(Course)).all())
+
+
+def get_paginated_courses(
+    db: Session,
+    page: int,
+    page_size: int,
+) -> tuple[list[Course], int]:
+    offset = (page - 1) * page_size
+    total_items = db.scalar(select(func.count()).select_from(Course)) or 0
+    courses = list(
+        db.scalars(
+            select(Course)
+            .order_by(Course.name, Course.id)
+            .offset(offset)
+            .limit(page_size),
+        ).all(),
+    )
+
+    return courses, total_items
 
 
 def get_course_by_id(db: Session, course_id: str) -> Course | None:

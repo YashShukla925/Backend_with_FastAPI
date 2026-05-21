@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.pagination import PaginationMeta
+
 
 class CourseCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -17,3 +19,8 @@ class CourseResponse(CourseCreate):
     id: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedCourseResponse(BaseModel):
+    items: list[CourseResponse]
+    meta: PaginationMeta

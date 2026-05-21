@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from math import ceil
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models import User
 from app.schemas.auth import UserRole
-from app.schemas.course import CourseCreate, CourseResponse, CourseUpdate
+from app.schemas.course import (
+    CourseCreate,
+    CourseResponse,
+    CourseUpdate,
+    PaginatedCourseResponse,
+)
 from app.services import course_service
 from app.services.course_service import DuplicateCourseNameError
 
@@ -27,12 +34,29 @@ def register_course(
         ) from None
 
 
-@router.get("/", response_model=list[CourseResponse])
+@router.get("/", response_model=PaginatedCourseResponse)
 def list_courses(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> list[CourseResponse]:
-    return course_service.get_all_courses(db)
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+) -> PaginatedCourseResponse:
+    courses, total_items = course_service.get_paginated_courses(
+        db,
+        page,
+        page_size,
+    )
+    total_pages = ceil(total_items / page_size) if total_items else 0
+
+    return PaginatedCourseResponse(
+        items=courses,
+        meta={
+            "page": page,
+            "page_size": page_size,
+            "total_items": total_items,
+            "total_pages": total_pages,
+        },
+    )
 
 
 @router.get("/{course_id}", response_model=CourseResponse)

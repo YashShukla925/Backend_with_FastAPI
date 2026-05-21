@@ -77,6 +77,25 @@ users
 - If a duplicate student email is used, the API returns `409 Conflict`.
 - If a duplicate course name is used, the API returns `409 Conflict`.
 - If a requested student or course does not exist, the API returns `404 Not Found`.
+- Invalid request data returns `422 Unprocessable Entity`.
+- Unexpected database or server errors return graceful `500` error responses.
+
+## Middleware and Error Handling
+
+The app logs every incoming request and outgoing response with the HTTP method, path,
+status code, and processing time. Each response also includes an `X-Process-Time`
+header.
+
+Errors are returned in a consistent shape:
+
+```json
+{
+  "error": {
+    "status_code": 404,
+    "message": "Student not found"
+  }
+}
+```
 
 ## Authentication and Authorization
 
@@ -89,7 +108,7 @@ Authorization: Bearer <access_token>
 
 Roles:
 
-- `admin` can create, update, and delete students and courses, and can create enrollments.
+- `admin` can create, update, delete, and list paginated students and courses, and can create enrollments.
 - `student` can access authenticated read routes.
 
 Passwords are stored as PBKDF2 hashes. Tokens are signed with HS256 in the service
@@ -115,12 +134,12 @@ http://127.0.0.1:8000/docs
 - `POST /api/v1/auth/login` logs a user in and returns a bearer token.
 - `GET /api/v1/auth/me` gets the authenticated user's profile.
 - `POST /api/v1/students/` registers a student.
-- `GET /api/v1/students/` lists students.
+- `GET /api/v1/students/?page=1&page_size=10` lists paginated students for admins.
 - `GET /api/v1/students/{student_id}` gets one student.
 - `PUT /api/v1/students/{student_id}` updates one student.
 - `DELETE /api/v1/students/{student_id}` deletes one student.
 - `POST /api/v1/courses/` registers a course.
-- `GET /api/v1/courses/` lists courses.
+- `GET /api/v1/courses/?page=1&page_size=10` lists paginated courses for admins.
 - `GET /api/v1/courses/{course_id}` gets one course.
 - `PUT /api/v1/courses/{course_id}` updates one course.
 - `DELETE /api/v1/courses/{course_id}` deletes one course.

@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.schemas.pagination import PaginationMeta
+
 
 class StudentCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
@@ -17,3 +19,8 @@ class StudentResponse(StudentCreate):
     id: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedStudentResponse(BaseModel):
+    items: list[StudentResponse]
+    meta: PaginationMeta
